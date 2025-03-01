@@ -1,121 +1,66 @@
-const dateText = document.getElementById("date-text");
-const calIcn = document.getElementById("cal-icn");
-const mapCalender = document.getElementById("map-calender");
+const apiKey = "0e92d68683ec9f95d296576033607728"; 
+const apiUrl = "https://api.openweathermap.org/data/2.5/weather?units=metric&q=";
 
-function toggleCalender() {
-    mapCalender.classList.toggle("d-none");
-}
+const searchBox = document.getElementById("city-input");
+const searchBtn = document.getElementById("search-btn");
+const weatherIcon = document.querySelector(".weather-icon");
 
-dateText.addEventListener("click", toggleCalender);
-calIcn.addEventListener("click", toggleCalender);
-
-document.addEventListener("click", (closeCal) => {
-    if (!mapCalender.contains(closeCal.target) && !dateText.contains(closeCal.target) && !calIcn.contains(closeCal.target)) {
-        mapCalender.classList.add("d-none");
+async function checkWeather(city) {
+    if (!city) {
+        alert("Please enter a city name.");
+        return;
     }
-});
 
-const monthToggle = document.getElementById("group");
-const dropdownIcon = document.getElementById("month-drpdwn");
-const monthList = document.getElementById("grp-month");
+    try {
+        const response = await fetch(apiUrl + encodeURIComponent(city) + `&appid=${apiKey}`);
+        const data = await response.json();
 
-function toggleMonthList() {
-    monthList.classList.toggle("d-none");
-}
+        console.log("API Response:", data); // Debugging output
 
-monthToggle.addEventListener("click", toggleMonthList);
-dropdownIcon.addEventListener("click", toggleMonthList);
+        if (data.cod === "404") {
+            document.querySelector(".city").innerText = "City not found!";
+            document.querySelector(".temp").innerText = "--°C";
+            document.querySelector(".humidity").innerText = "--%";
+            document.querySelector(".wind").innerText = "--Km/h";
+            weatherIcon.src = "images/error.png";
+            return;
+        }
 
-document.addEventListener("click", (event) => {
-    if (!monthToggle.contains(event.target) && !dropdownIcon.contains(event.target) && !monthList.contains(event.target)) {
-        monthList.classList.add("d-none");
-    }
-});
+        if (!data.name) {
+            console.error("Error: City name is undefined in API response");
+            return;
+        }
 
-let yearGroup = document.getElementById("year-group");
-let yearDrpDwn = document.getElementById("year-drpdwn");
-let grpList = document.getElementById("grp-list");
+        // Update UI with weather data
+        document.querySelector(".city").innerText = data.name;
+        document.querySelector(".temp").innerText = Math.round(data.main.temp) + "°C";
+        document.querySelector(".humidity").innerText = data.main.humidity + "%";
+        document.querySelector(".wind").innerText = data.wind.speed + "Km/h";
 
-function toggleYear() {
-    grpList.classList.toggle("d-none");
-}
-
-yearGroup.addEventListener("click", toggleYear);
-yearDrpDwn.addEventListener("click", toggleYear);
-
-
-document.querySelectorAll("#grp-month li").forEach(li => {
-    li.classList.add("month");
-});
-
-document.querySelectorAll(".days li").forEach(li => {
-    li.classList.add("day");
-});
-
-
-const months = document.querySelectorAll(".month");
-const days = document.querySelectorAll(".day");
-
-let selectedDay = 1;
-let selectedMonth = "February";
-let selectedYear = "2025";
-
-months.forEach(month => {
-    month.addEventListener("click", () => {
-        selectedMonth = month.innerText;
-        monthToggle.innerText = selectedMonth;
-        monthList.classList.add("d-none");
-        updateDate();
-    })
-})
-
-days.forEach(day => {
-    day.addEventListener("click", () => {
-        selectedDay = day.innerText;
-        updateDate();
-    })
-})
-
-function updateDate() {
-    if (selectedMonth && selectedDay) {
-        document.getElementById("date-text").value = `${selectedMonth} ${selectedDay}`;
+        // Set weather icon
+        const weatherCondition = data.weather[0]?.main.toLowerCase();
+        const iconMap = {
+            "clouds": "images/clouds.png",
+            "clear": "images/clear.png",
+            "rain": "images/rain.png",
+            "drizzle": "images/drizzle.png",
+            "mist": "images/mist.png"
+        };
+        
+        weatherIcon.src = iconMap[weatherCondition] || "images/default.png";
+    } catch (error) {
+        console.error("Error fetching weather:", error);
+        alert("Could not fetch weather data. Check console for details.");
     }
 }
 
-document.querySelectorAll("#maptime-ul li").forEach(li => {
-    li.classList.add("time");
-
-})
-
-const dateText2 = document.getElementById("date-text-2");
-const mapTime = document.getElementById("maptime-ul");
-
-function toggleMapTime() {
-    mapTime.classList.toggle("d-none");
-}
-
-dateText2.addEventListener("click", toggleMapTime);
-
-document.addEventListener("click", (closeTime) => {
-    if (!dateText2.contains(closeTime.target) && !mapTime.contains(closeTime.target)) {
-        mapTime.classList.add("d-none");
-    }
-})
-
-let selectedTime = "Now";
-
-document.querySelectorAll("#maptime-ul li").forEach(time => {
-    time.addEventListener("click", () => {
-        selectedTime = time.innerText;
-        dateText2.value = selectedTime;
-        mapTime.classList.add("d-none"); 
-    });
+// Event listeners for search
+searchBtn.addEventListener("click", () => {
+    checkWeather(searchBox.value.trim());
 });
 
-
-function updateTime(){
-    if(selectedTime){
-        document.getElementById("date-text-2").value = `${selectedTime}`
+searchBox.addEventListener("keypress", (event) => {
+    if (event.key === "Enter") {
+        checkWeather(searchBox.value.trim());
     }
-}
-
+});
